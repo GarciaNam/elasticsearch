@@ -19,6 +19,8 @@
 
 package org.elasticsearch.common.util;
 
+import java.util.Arrays;
+
 /**
  *
  */
@@ -26,6 +28,13 @@ public class ArrayUtils {
 
     private ArrayUtils() {}
 
+    /**
+     * Return the index of <code>value</code> in <code>array</code>, or <tt>-1</tt> if there is no such index.
+     * If there are several values that are within <code>tolerance</code> or less of <code>value</code>, this method will return the
+     * index of the closest value. In case of several values being as close ot <code>value</code>, there is no guarantee which index
+     * will be returned.
+     * Results are undefined if the array is not sorted.
+     */
     public static int binarySearch(double[] array, double value, double tolerance) {
         if (array.length == 0) {
             return -1;
@@ -34,33 +43,30 @@ public class ArrayUtils {
     }
 
     private static int binarySearch(double[] array, int fromIndex, int toIndex, double value, double tolerance) {
-        int low = fromIndex;
-        int high = toIndex - 1;
-        double valTop = Double.isNaN(value) ? Double.NaN : value + tolerance;
-        double valBottom = Double.isNaN(value) ? Double.NaN : value - tolerance;
-        long valTopBits = Double.doubleToLongBits(valTop);
-        long valBottomBits = Double.doubleToLongBits(valBottom);
+        int index = Arrays.binarySearch(array, fromIndex, toIndex, value);
+        if (index < 0) {
+            final int highIndex = -1 - index; // first index of a value that is > value
+            final int lowIndex = highIndex - 1; // last index of a value that is < value
 
-        while (low <= high) {
-            int mid = (low + high) >>> 1;
-            double midVal = array[mid];
+            double lowError = Double.POSITIVE_INFINITY;
+            double highError = Double.POSITIVE_INFINITY;
+            if (lowIndex >= 0) {
+                lowError = value - array[lowIndex];
+            }
+            if (highIndex < array.length) {
+                highError = array[highIndex] - value;
+            }
 
-            if (midVal < valBottom) {
-                low = mid + 1;  // Neither val is NaN, thisVal is smaller
-            } else if (midVal > valTop) {
-                high = mid - 1; // Neither val is NaN, thisVal is larger
+            if (highError < lowError) {
+                if (highError < tolerance) {
+                    index = highIndex;
+                }
+            } else if (lowError < tolerance) {
+                index = lowIndex;
             } else {
-                long midBits = Double.doubleToLongBits(midVal);
-                if (midBits >= valBottomBits && midBits <= valTopBits) {     // Values are considered equal
-                    return mid;                 // value found
-                }
-                if (midBits < valBottomBits) {  // (-0.0, 0.0) or (!NaN, NaN)
-                    low = mid + 1;
-                } else {                        // (0.0, -0.0) or (NaN, !NaN)
-                    high = mid - 1;
-                }
+                index = -1;
             }
         }
-        return -1;  // key not found.
+        return index;
     }
 }

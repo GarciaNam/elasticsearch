@@ -70,14 +70,7 @@ public class ArrayUtilsTests {
                 }
             }
 
-
-            System.out.println("array: " + Arrays.toString(array));
-            System.out.println("look for: " + lookForValue);
-            System.out.println("tolerance: " + tolerance);
-
             int foundIndex = ArrayUtils.binarySearch(array, lookForValue, tolerance);
-            System.out.println("index: " + foundIndex);
-            System.out.println("cardinality: " + bitSet.cardinality());
 
             if (bitSet.cardinality() == 0) {
                 assertThat(foundIndex, is(-1));
